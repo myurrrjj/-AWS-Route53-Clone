@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: #f2f3f3;
+  color: #16191f;
+}
+
+html.dark body {
+  background: #0f1b2a;
+  color: #e9ebed;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #aab7b8 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #aab7b8;
+  border-radius: 6px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.18s ease-out;
+}
+
+.aws-focus:focus-visible {
+  outline: 2px solid #0972d3;
+  outline-offset: 1px;
+}
