@@ -51,6 +51,13 @@ class ZoneUpdate(BaseModel):
     comment: Optional[str] = None
     type: Optional[str] = None
 
+    @field_validator("type")
+    @classmethod
+    def clean_type(cls, v):
+        if v is not None and v not in ZONE_TYPES:
+            raise ValueError("type must be Public or Private")
+        return v
+
 
 class ZoneOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -112,6 +119,30 @@ class RecordUpdate(BaseModel):
     value: Optional[str] = None
     routing_policy: Optional[str] = None
     set_identifier: Optional[str] = None
+
+    @field_validator("type")
+    @classmethod
+    def clean_record_type(cls, v):
+        if v is None:
+            return v
+        v = v.strip().upper()
+        if v not in RECORD_TYPES:
+            raise ValueError(f"type must be one of {', '.join(RECORD_TYPES)}")
+        return v
+
+    @field_validator("routing_policy")
+    @classmethod
+    def clean_policy(cls, v):
+        if v is not None and v not in ROUTING_POLICIES:
+            raise ValueError(f"routing_policy must be one of {', '.join(ROUTING_POLICIES)}")
+        return v
+
+    @field_validator("ttl")
+    @classmethod
+    def clean_ttl(cls, v):
+        if v is not None and (v < 0 or v > 2147483647):
+            raise ValueError("ttl must be between 0 and 2147483647")
+        return v
 
 
 class RecordOut(BaseModel):

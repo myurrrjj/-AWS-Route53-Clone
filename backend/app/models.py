@@ -25,7 +25,7 @@ class HostedZone(Base):
     __tablename__ = "hosted_zones"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False,unique=True, index=True)
     comment: Mapped[str] = mapped_column(Text, default="")
     type: Mapped[str] = mapped_column(String(16), default="Public")
     private_zone: Mapped[bool] = mapped_column(default=False)

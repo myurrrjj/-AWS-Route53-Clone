@@ -32,13 +32,20 @@ export default function ZoneDetailPage({ params }: { params: { id: string } }) {
   const [creating, setCreating] = useState(false);
   const [confirm, setConfirm] = useState<DnsRecord | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+    const [debouncedQ, setDebouncedQ] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [z, recs] = await Promise.all([
         api.zone(zoneId),
-        api.records(zoneId, { q, type, page, page_size: pageSize }),
+        api.records(zoneId, { q:debouncedQ, type, page, page_size: pageSize }),
       ]);
       setZone(z);
       setData(recs);
@@ -53,7 +60,7 @@ export default function ZoneDetailPage({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
-  }, [zoneId, q, type, page, pageSize, push, router]);
+  }, [zoneId, debouncedQ, type, page, pageSize, push, router]);
 
   useEffect(() => {
     load();

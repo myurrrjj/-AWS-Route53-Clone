@@ -109,11 +109,10 @@ def update_record(
     data = payload.model_dump(exclude_unset=True)
     if "name" in data:
         record.name = normalize_name(data["name"], zone.name)
+    
     if "type" in data:
-        t = data["type"].strip().upper()
-        if t not in ["A", "AAAA", "CNAME", "TXT", "MX", "NS", "PTR", "SRV", "CAA", "SOA"]:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid record type")
-        record.type = t
+        record.type = data["type"]
+
     if "ttl" in data:
         record.ttl = data["ttl"]
     if "value" in data:

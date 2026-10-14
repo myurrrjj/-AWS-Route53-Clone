@@ -11,7 +11,7 @@ import { Spinner } from "@/components/Spinner";
 import { useFlash } from "@/components/FlashProvider";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, shortId } from "@/lib/format";
-import type { HostedZone, Page } from "@/lib/types";
+import { HostedZone, Page } from "@/lib/types";
 
 export default function HostedZonesPage() {
   const { push } = useFlash();
@@ -25,11 +25,18 @@ export default function HostedZonesPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [editZone, setEditZone] = useState<HostedZone | null>(null);
   const [confirm, setConfirm] = useState<HostedZone | null>(null);
+  const [debouncedQ, setDebouncedQ] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.zones({ q, type, page, page_size: pageSize });
+      const res = await api.zones({ q:debouncedQ, type, page, page_size: pageSize });
       setData(res);
       setSelected([]);
     } catch (err) {
@@ -37,7 +44,7 @@ export default function HostedZonesPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, type, page, pageSize, push]);
+  }, [debouncedQ, type, page, pageSize, push]);
 
   useEffect(() => {
     load();

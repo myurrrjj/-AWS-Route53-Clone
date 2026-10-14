@@ -9,7 +9,7 @@ build/
 !.env.example
 __pycache__/
 *.pyc
-.DS_Store__pycache__/
+.DS_Store
 *.pyc
 .venv/
 venv/

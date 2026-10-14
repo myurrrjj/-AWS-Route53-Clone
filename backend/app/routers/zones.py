@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError 
+
 
 from ..database import get_db
 from ..deps import current_user
@@ -80,7 +82,18 @@ def list_zones(
 
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = db.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all()
-    items = [to_out(z, count_records(db, z.id)) for z in rows]
+    zone_ids = [z.id for z in rows]
+    counts = (
+        dict(
+            db.execute(
+                select(DnsRecord.zone_id,func.count(DnsRecord.id))
+                    .where(DnsRecord.zone_id.in_(zone_ids))
+                    .group_by(DnsRecord.zone_id)
+            ).all()
+        )
+        if zone_ids else {}
+    )
+    items = [to_out(z, counts.get(z.id,0)) for z in rows]
     pages = max(1, (total + page_size - 1) // page_size)
     return PaginatedZones(items=items, total=total, page=page, page_size=page_size, pages=pages)
 
@@ -104,19 +117,16 @@ def create_zone(payload: ZoneCreate, db: Session = Depends(get_db), user: User =
         caller_reference=new_caller_reference(),
     )
     db.add(zone)
-    db.flush()
 
-    db.add(DnsRecord(zone_id=zone.id, name=zone.name, type="NS", ttl=172800, value=nameservers(zone.name)))
-    db.add(
-        DnsRecord(
-            zone_id=zone.id,
-            name=zone.name,
-            type="SOA",
-            ttl=900,
-            value=f"ns-1.awsdns-00.com. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400",
-        )
-    )
-    db.commit()
+    try: 
+        db.flush()
+        db.add(DnsRecord(zone_id=zone.id, name=zone.name, type="NS", ttl=172800, value=nameservers(zone.name)))
+        db.add(DnsRecord(zone_id=zone.id,name=zone.name, type="SOA",ttl=900,value=f"ns-1.awsdns-00.com. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400",))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code = status.HTTP_409_CONFLICT,detail= "A hosted zone with that name already exists")
+        
     db.refresh(zone)
     return to_out(zone, count_records(db, zone.id))
 
@@ -132,8 +142,6 @@ def update_zone(
     if payload.comment is not None:
         zone.comment = payload.comment
     if payload.type is not None:
-        if payload.type not in ("Public", "Private"):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="type must be Public or Private")
         zone.type = payload.type
         zone.private_zone = payload.type == "Private"
     db.commit()
