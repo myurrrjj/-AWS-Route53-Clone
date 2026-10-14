@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete,func, or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import current_user
 from ..models import DnsRecord, HostedZone, User
 from ..schemas import PaginatedRecords, RecordCreate, RecordOut, RecordUpdate
+
 
 router = APIRouter(prefix="/api/hosted-zones/{zone_id}/records", tags=["dns-records"])
 
@@ -145,11 +146,11 @@ def bulk_delete(
     zone_or_404(db, zone_id)
     if not ids:
         return {"deleted": 0}
-    rows = db.scalars(select(DnsRecord).where(DnsRecord.zone_id == zone_id, DnsRecord.id.in_(ids))).all()
-    for r in rows:
-        db.delete(r)
+    result = db.execute(
+        delete(DnsRecord).where(DnsRecord.zone_id == zone_id, DnsRecord.id.in_(ids))
+    )
     db.commit()
-    return {"deleted": len(rows)}
+    return {"deleted": result.rowcount}
 
 
 class BindPayload(BaseModel):

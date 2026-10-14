@@ -19,7 +19,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET", "route53-clone-dev-secret-change-me"),
     same_site="lax",
-    https_only=False,
+    https_only=os.getenv("COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),  #set true in production so the cookie is only sent over HTTPS
 )
 
 app.add_middleware(
